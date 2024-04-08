@@ -2,6 +2,8 @@
 
 Original script by Sorrow. Modified by me to include some fixes and improvements.
 
+Modified work of @zhaarey to download playlists in a more reasonable way.
+
 ## How to use
 1. Create a virtual device on Android Studio with a image that doesn't have Google APIs.
 2. Install this version of Apple Music: https://www.apkmirror.com/apk/apple/apple-music/apple-music-3-6-0-beta-release/apple-music-3-6-0-beta-4-android-apk-download/. You will also need SAI to install it: https://f-droid.org/pt_BR/packages/com.aefyr.sai.fdroid/.
