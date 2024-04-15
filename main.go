@@ -1240,7 +1240,7 @@ func main() {
 	for taskNum, url := range os.Args[1:] {
 		fmt.Printf("Task %d of %d:\n", taskNum+1, taskTotal)
 		var storefront, playlistId, albumId string
-		if strings.Contains(url, "playlist") {
+		if strings.Contains(url, "/playlist/") {
 			storefront, playlistId = checkUrlPlaylist(url)
 			albumList, err := preprocess(playlistId, token, storefront)
 			if err != nil {
