@@ -1102,6 +1102,7 @@ func rip(albumId string, token string, storefront string) error {
 
 type myTrackListItemStruct struct {
 	albumURL string
+	discID   int
 	trackID  int
 }
 
@@ -1116,7 +1117,7 @@ func preprocess(albumId string, token string, storefront string) ([]myTrackListI
 	}
 
 	for i := 0; i < len(meta.Data[0].Relationships.Tracks.Data); i++ {
-		albumList = append(albumList, myTrackListItemStruct{albumURL: meta.Data[0].Relationships.Tracks.Data[i].Attributes.URL, trackID: meta.Data[0].Relationships.Tracks.Data[i].Attributes.TrackNumber})
+		albumList = append(albumList, myTrackListItemStruct{albumURL: meta.Data[0].Relationships.Tracks.Data[i].Attributes.URL, discID: meta.Data[0].Relationships.Tracks.Data[i].Attributes.DiscNumber, trackID: meta.Data[0].Relationships.Tracks.Data[i].Attributes.TrackNumber})
 		// fmt.Println("DEBUG: ", meta.Data[0].Relationships.Tracks.Data[i].Attributes.URL)
 	}
 
@@ -1132,7 +1133,7 @@ func isInArray(arr []int, target int) bool {
 	return false
 }
 
-func riptrack(albumId string, token string, storefront string, trackID int) error {
+func riptrack(albumId string, token string, storefront string, discID int, trackID int) error {
 
 	meta, err := getMeta(albumId, token, storefront)
 	if err != nil {
@@ -1154,6 +1155,33 @@ func riptrack(albumId string, token string, storefront string, trackID int) erro
 	arr := make([]int, trackTotal)
 	for i := 0; i < trackTotal; i++ {
 		arr[i] = i + 1
+	}
+
+	// Here comes some cursed code
+	// In albums, chances are that there could be more than one disc
+	// The metadata can give us the discID and the trackID
+	// But the trackID is the relevant ID in that disc
+	// While we download, we need the track ID relevant to the whole album
+	// Which is not given in the metadata
+	// So we need to calculate the track ID of the whole album
+	// For instance, if there are 2 discs and 10 tracks in each disc
+	// The track ID of the 5th track in the 2nd disc is 15
+	// And when we download, we need to download the 15th track of the whole album
+	// But how can we find how much tracks are there in the 1st disc?
+	// No way
+	// So if the discID is not 1
+	// We will go through the album before find our desginated track
+	// And now let's get a load of this
+
+	if discID != 1 {
+		for i := 0; i < len(meta.Data[0].Relationships.Tracks.Data); i++ {
+			if meta.Data[0].Relationships.Tracks.Data[i].Attributes.DiscNumber == discID {
+				if meta.Data[0].Relationships.Tracks.Data[i].Attributes.TrackNumber == trackID {
+					trackID = i + 1
+					break
+				}
+			}
+		}
 	}
 
 	input := strconv.Itoa(trackID)
@@ -1258,7 +1286,7 @@ func main() {
 					fmt.Printf("Invalid URL: %s\n", url)
 					continue
 				}
-				err := riptrack(albumId, token, storefront, myTrackListItem.trackID)
+				err := riptrack(albumId, token, storefront, myTrackListItem.discID, myTrackListItem.trackID)
 				if err != nil {
 					fmt.Println("Album failed.")
 					fmt.Println(err)
