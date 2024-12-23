@@ -1137,7 +1137,7 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 
 	meta, err := getMeta(albumId, token, storefront)
 	if err != nil {
-		fmt.Println("Failed to get album metadata.\n")
+		fmt.Println("Failed to get album metadata.")
 		return err
 	}
 	albumFolder := fmt.Sprintf("%s - %s", meta.Data[0].Attributes.ArtistName, meta.Data[0].Attributes.Name)
@@ -1200,6 +1200,7 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 			}
 		}
 	}
+	var myError error
 	for trackNum, track := range meta.Data[0].Relationships.Tracks.Data {
 		trackNum++
 		if isInArray(arr, trackNum) {
@@ -1213,6 +1214,7 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 			}
 			if manifest.Attributes.ExtendedAssetUrls.EnhancedHls == "" {
 				fmt.Println("Unavailable in ALAC.")
+				myError = errors.New("unavailable in ALAC.")
 				continue
 			}
 			filename := fmt.Sprintf("%02d. %s.m4a", trackNum, forbiddenNames.ReplaceAllString(track.Attributes.Name, "_"))
@@ -1223,6 +1225,7 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 			}
 			if exists {
 				fmt.Println("Track already exists locally.")
+				myError = errors.New("track already exists locally.")
 				continue
 			}
 			trackUrl, keys, err := extractMedia(manifest.Attributes.ExtendedAssetUrls.EnhancedHls)
@@ -1255,7 +1258,11 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 			}
 		}
 	}
-	return err
+	if err != nil {
+		return err
+	} else {
+		return myError
+	}
 }
 
 func main() {
@@ -1276,6 +1283,11 @@ func main() {
 				fmt.Println(err)
 			}
 			albumTotal := len(albumList)
+			var downloadedTotal, skippedTotal, unavailableTotal, failedTotal int
+			downloadedTotal = 0
+			skippedTotal = 0
+			unavailableTotal = 0
+			failedTotal = 0
 			for albumNum, myTrackListItem := range albumList {
 				fmt.Printf("Album %d of %d:\n", albumNum+1, albumTotal)
 
@@ -1284,14 +1296,26 @@ func main() {
 
 				if albumId == "" {
 					fmt.Printf("Invalid URL: %s\n", url)
+					failedTotal++
 					continue
 				}
 				err := riptrack(albumId, token, storefront, myTrackListItem.discID, myTrackListItem.trackID)
 				if err != nil {
 					fmt.Println("Album failed.")
 					fmt.Println(err)
+					if err.Error() == "track already exists locally." {
+						skippedTotal++
+					} else if err.Error() == "unavailable in ALAC." {
+						unavailableTotal++
+					} else {
+						failedTotal++
+					}
+				} else {
+					downloadedTotal++
 				}
 			}
+
+			fmt.Printf("Summary:%d tasks: %d downloaded, %d skipped, %d unavaliable, %d failed.\n", albumTotal, downloadedTotal, skippedTotal, unavailableTotal, failedTotal)
 
 			return
 
