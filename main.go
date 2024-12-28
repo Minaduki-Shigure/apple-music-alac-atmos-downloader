@@ -1140,7 +1140,12 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 		fmt.Println("Failed to get album metadata.")
 		return err
 	}
-	albumFolder := fmt.Sprintf("%s - %s", meta.Data[0].Attributes.ArtistName, meta.Data[0].Attributes.Name)
+	var artistName = meta.Data[0].Attributes.ArtistName
+	const maxLen = 100
+	if len(artistName) > maxLen {
+		artistName = artistName[:maxLen]
+	}
+	albumFolder := fmt.Sprintf("%s - %s", artistName, meta.Data[0].Attributes.Name)
 	if strings.HasSuffix(albumFolder, ".") {
 		albumFolder = strings.ReplaceAll(albumFolder, ".", "")
 	}
