@@ -1141,7 +1141,7 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 		return err
 	}
 	var artistName = meta.Data[0].Attributes.ArtistName
-	const maxLen = 100
+	const maxLen = 160
 	if len(artistName) > maxLen {
 		artistName = artistName[:maxLen]
 	}
