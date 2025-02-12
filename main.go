@@ -1224,11 +1224,11 @@ func riptrack(albumId string, token string, storefront string, discID int, track
 	artistObj, err := getArtist(meta.Data[0].Relationships.Artists.Data[0].ID, token, storefront)
 	if err != nil {
 		fmt.Println("Failed to get artist artwork.")
-		return err
-	}
-	err = writeArtistArtwork(sanArtistFolder, artistObj.Data[0].Attributes.Artwork.URL)
-	if err != nil {
-		fmt.Println("Failed to write artist artwork.")
+	} else {
+		err = writeArtistArtwork(sanArtistFolder, artistObj.Data[0].Attributes.Artwork.URL)
+		if err != nil {
+			fmt.Println("Failed to write artist artwork.")
+		}
 	}
 	fmt.Println(albumFolder)
 	err = writeCover(sanAlbumFolder, meta.Data[0].Attributes.Artwork.URL)
