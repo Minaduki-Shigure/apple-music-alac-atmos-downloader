@@ -1377,7 +1377,7 @@ func getInfoFromAdam(adamId string, token string, storefront string) (*SongData,
 }
 
 func getToken() (string, error) {
-	req, err := http.NewRequest("GET", "https://beta.music.apple.com", nil)
+	req, err := http.NewRequest("GET", "https://music.apple.com", nil)
 	if err != nil {
 		return "", err
 	}
@@ -1387,16 +1387,22 @@ func getToken() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(resp.Status)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
-	regex := regexp.MustCompile(`/assets/index-legacy-[^/]+\.js`)
+	regex := regexp.MustCompile(`/assets/index~[^/]+\.js`)
 	indexJsUri := regex.FindString(string(body))
+	if indexJsUri == "" {
+		return "", errors.New("failed to find Apple Music index script")
+	}
 
-	req, err = http.NewRequest("GET", "https://beta.music.apple.com"+indexJsUri, nil)
+	req, err = http.NewRequest("GET", "https://music.apple.com"+indexJsUri, nil)
 	if err != nil {
 		return "", err
 	}
@@ -1406,14 +1412,20 @@ func getToken() (string, error) {
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(resp.Status)
+	}
 
 	body, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
 
-	regex = regexp.MustCompile(`eyJh([^"]*)`)
+	regex = regexp.MustCompile(`eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+`)
 	token := regex.FindString(string(body))
+	if token == "" {
+		return "", errors.New("failed to find Apple Music authorization token")
+	}
 
 	return token, nil
 }
